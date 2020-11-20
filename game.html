@@ -1,42 +1,189 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width">
-    <title>repl.it</title>
-    <link href="style.css" rel="stylesheet" type="text/css" />
-    <style>
-        canvas {
-            border: 1px solid #d3d3d3;
-            background-color: #f1f1f1;
-        }
-    </style>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Home</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body onload="startGame()">
     <div class="sidenav">
         <a href="home.html">Home</a>
         <a href="instructions.html">Instructions</a>
         <a href="game.html">Game</a>
     </div>
-    <div class="main">
-        <p> Note a few things. I need to put the event onLoad in the body tag for my canvas to show up </p>
 
-        <p> For this part do the following...</p>
+<script>
 
-        <ol>
-            <li>Change the color of the canvas</li>
-            <li>Change the size of the canvas</li>
-            <li>Change the color of the red square, BUT NOT GREEEN</li>
-            <li>This Game at the moment is terrible. Create buttons to move down, left, right, and stop</li>
-            <li>What is the significance of updateGameArea()? Be thorough in your explaination</li>
+var myGamePiece;
+var myObstacles = [];
 
-            <li>Create another component that is green. You should have a square and another green object as your final product</li>
-        </ol>
+function startGame() {
+    myGamePiece = new component(30, 30, "red", 10, 120);
+    myGameArea.start();
+}
 
-        <button onclick="moveup()">UP</button>
+var myGameArea = {
+    canvas : document.createElement("canvas"),
+    start : function() {
+        myObstacles = [];
+        this.context = this.canvas.getContext("2d");
+        this.canvas.width = 480;
+        this.canvas.height = 270;
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.frameNo = 0;
+        this.difficulty=1;
+        this.interval = setInterval(updateGameArea, 20);
+        this.context.font = "10px Sans-Serif";
+        this.context.fillStyle = "black";
+        this.context.textAlign = "center";
+        },
+    clear : function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+    stop : function() {
+        clearInterval(this.interval);
+        var ctx = this.canvas.getContext("2d");
+        ctx.font = "70px Sans-Serif";
+        ctx.fillStyle = "red";
+        ctx.textAlign = "center";
+        ctx.fillText("You Died", this.canvas.width/2, this.canvas.height/2); 
+        ctx.font = "20px Sans-Serif";
+        ctx.fillText("Final Score: " + this.frameNo*this.difficulty, this.canvas.width/2, this.canvas.height/2+30); 
+        setTimeout(function (canvas){
+          startGame();
+        }, 1000);
+        
+    }    
+}
+
+function component(width, height, color, x, y) {
+    this.width = width;
+    this.height = height;
+    this.speedX = 0;
+    this.speedY = 0;    
+    this.x = x;
+    this.y = y;    
+    this.gravity = 0.05;
+  this.gravitySpeed = 0;
+    this.update = function() {
+        ctx = myGameArea.context;
+        ctx.fillStyle = color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+    this.newPos = function() {
+      this.gravitySpeed += this.gravity;
+      this.x += this.speedX;
+      this.y += this.speedY + this.gravitySpeed;
+      this.hitBottom();
+    }    
+    this.crashWith = function(otherobj) {
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + (otherobj.width);
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + (otherobj.height);
+        var crash = true;
+        if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myleft > otherright)) {
+            crash = false;
+        }
+        return crash;
+    }
+    this.hitBottom = function() {
+      var rockbottom = myGameArea.canvas.height - this.height;
+      if (this.y > rockbottom) {
+        this.y = rockbottom;
+        this.gravitySpeed;
+      }
+    }
+}
+
+function updateGameArea() {
+    var x, y;
+    for (i = 0; i < myObstacles.length; i += 1) {
+        if (myGamePiece.crashWith(myObstacles[i])) {
+            myGameArea.stop();
+            return;
+        } 
+    }
+    myGameArea.clear();
+    myGameArea.frameNo += 1;
+    var ctx = myGameArea.context;
+    ctx.font = "15px Sans-Serif";
+    ctx.fillStyle = "black";
+    ctx.textAlign = "right";
+    myGameArea.context.fillText(myGameArea.frameNo*myGameArea.difficulty, myGameArea.canvas.width-5, 15); 
+    if (myGameArea.frameNo == 1 || everyinterval(150/myGameArea.difficulty)) {
+        x = myGameArea.canvas.width;
+        h = Math.random() * (100 - 10) + 10;
+        y = myGameArea.canvas.height-h;
+        myObstacles.push(new component(10, h, "brown", x, y));
+    }
+    for (i = 0; i < myObstacles.length; i += 1) {
+        myObstacles[i].x += -1*myGameArea.difficulty;
+        myObstacles[i].update();
+        var img = document.getElementById("bush");
+        myGameArea.context.drawImage(img, myObstacles[i].x, myGameArea.canvas.height-myObstacles[i].y);
+    }
+    myGamePiece.newPos();    
+    myGamePiece.update();
+}
+
+function everyinterval(n) {
+    if ((myGameArea.frameNo / n) % 1 == 0) {return true;}
+    return false;
+}
+
+function moveup() {
+  this.gravitySpeed = -1;
+  this.gravity = -1;
+} 
+
+if (myGameArea.key == 32) {
+  myGamePiece.speedY = -5; 
+  this.gravity = -0.2;
+}  
+
+function movedown() {
+    myGamePiece.speedY = 1; 
+}
+
+function moveleft() {
+    myGamePiece.speedX = -1; 
+}
+
+function moveright() {
+    myGamePiece.speedX = 1; 
+}
+
+function clearmove() {
+    myGamePiece.speedX = 0; 
+    myGamePiece.speedY = 0; 
+}
+function difficulty(h) {
+  myGameArea.difficulty = h;
+}
+</script>
+<div style="text-align:center;width:480px;">
+  <button onmousedown="moveup()" onmouseup="clearmove()" ontouchstart="moveup()">Jump (Spacebar)</button><br><br>
+</div>
+<div style="text-align:left;width:480px;">
+  <button onmousedown="difficulty(1)" ontouchstart="difficulty(1)">Easy</button><br><br>
+</div>
+<div style="text-align:left;width:480px;">
+  <button onmousedown="difficulty(2)" ontouchstart="difficulty(2)">Medium</button><br><br>
+</div>
+<div style="text-align:left;width:480px;">
+  <button onmousedown="difficulty(3)" ontouchstart="difficulty(3)">Hard</button><br><br>
+</div>
+<p>Pog Dinosaur</p>
 
 
-        <script src="script.js"></script>
-    </div>
-</body></html>
+<img id="bush" width="22" height="27"
+src="https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fpluspng.com%2Fimg-png%2Fbush-png-shrubs-png-christmas-flowers-acacia-bush-image-42048-768.png&f=1&nofb=1">
+
+</body>
+</html>
