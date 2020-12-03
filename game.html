@@ -37,6 +37,12 @@ var myGameArea = {
         this.context.font = "10px Sans-Serif";
         this.context.fillStyle = "black";
         this.context.textAlign = "center";
+        window.addEventListener('keydown', function (e) {
+            myGameArea.key = e.keyCode;
+        })
+        window.addEventListener('keyup', function (e) {
+            myGameArea.key = false;
+        })
         },
     clear : function() {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -63,19 +69,26 @@ function component(width, height, color, x, y) {
     this.speedX = 0;
     this.speedY = 0;    
     this.x = x;
-    this.y = y;    
+    this.y = y;
+    this.canJump = false;
     this.gravity = 0.05;
-  this.gravitySpeed = 0;
+    this.gravitySpeed = 0;
     this.update = function() {
         ctx = myGameArea.context;
         ctx.fillStyle = color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+         ctx.fillRect(this.x, this.y, this.width, this.height);
+        
     }
     this.newPos = function() {
       this.gravitySpeed += this.gravity;
       this.x += this.speedX;
       this.y += this.speedY + this.gravitySpeed;
-      this.hitBottom();
+      var rockbottom = myGameArea.canvas.height - this.height;
+      if (this.y > rockbottom) {
+        this.y = rockbottom;
+        this.canJump = true;
+        this.gravitySpeed = 0;
+      }
     }    
     this.crashWith = function(otherobj) {
         var myleft = this.x;
@@ -92,12 +105,12 @@ function component(width, height, color, x, y) {
         }
         return crash;
     }
-    this.hitBottom = function() {
-      var rockbottom = myGameArea.canvas.height - this.height;
-      if (this.y > rockbottom) {
-        this.y = rockbottom;
-        this.gravitySpeed;
-      }
+    this.doJump = function() {
+        if (this.canJump) {
+            console.log("jump");
+            this.gravitySpeed -= 4;
+            this.canJump = false;
+        }
     }
 }
 
@@ -127,8 +140,10 @@ function updateGameArea() {
         myObstacles[i].update();
         var img = document.getElementById("bush");
         myGameArea.context.drawImage(img, myObstacles[i].x, myGameArea.canvas.height-myObstacles[i].y);
-    }
-    myGamePiece.newPos();    
+    } 
+    
+    myGamePiece.newPos();
+    if (myGameArea.key && myGameArea.key == 32) {myGamePiece.doJump();}
     myGamePiece.update();
 }
 
@@ -167,16 +182,14 @@ function difficulty(h) {
   myGameArea.difficulty = h;
 }
 </script>
+
 <div style="text-align:center;width:480px;">
-  <button onmousedown="moveup()" onmouseup="clearmove()" ontouchstart="moveup()">Jump (Spacebar)</button><br><br>
-</div>
-<div style="text-align:left;width:480px;">
   <button onmousedown="difficulty(1)" ontouchstart="difficulty(1)">Easy</button><br><br>
 </div>
-<div style="text-align:left;width:480px;">
+<div style="text-align:center;width:480px;">
   <button onmousedown="difficulty(2)" ontouchstart="difficulty(2)">Medium</button><br><br>
 </div>
-<div style="text-align:left;width:480px;">
+<div style="text-align:center;width:480px;">
   <button onmousedown="difficulty(3)" ontouchstart="difficulty(3)">Hard</button><br><br>
 </div>
 <p>Pog Dinosaur</p>
